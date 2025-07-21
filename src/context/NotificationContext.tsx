@@ -3,7 +3,7 @@ import { Snackbar, Alert, AlertColor } from '@mui/material'
 import { notificationsApi } from '@/services/api/notifications'
 import { Notification } from '@/types'
 import { useAuth } from './AuthContext'
-
+import { supabase } from '@/services/supabase'
 
 interface NotificationContextType {
   notifications: Notification[]

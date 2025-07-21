@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check active sessions and sets the user
+    // Check active sessions and set the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -80,29 +80,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Username already taken')
     }
 
-    // Create auth user
+    // Create auth user and pass username as raw_user_meta_data
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: { username }
+      }
     })
 
     if (error) throw error
 
-    // Create user profile
+    // Profile will be created by DB trigger automatically
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email,
-          username,
-          email_verified: false,
-          is_admin: false,
-          is_banned: false,
-          course_progress_public: true
-        })
-
-      if (profileError) throw profileError
       await loadProfile(data.user.id)
     }
   }
