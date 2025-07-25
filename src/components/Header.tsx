@@ -32,7 +32,12 @@ import { useTheme as useAppTheme } from '@/context/ThemeContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { useNotification } from '@/context/NotificationContext'
 
-const Header: React.FC = () => {
+
+interface HeaderProps {
+  onOpenNotifications?: () => void
+}
+
+const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const navigate = useNavigate()
@@ -128,7 +133,7 @@ const Header: React.FC = () => {
 
           {profile ? (
             <>
-              <IconButton color="inherit" component={Link} to="/notifications">
+              <IconButton color="inherit" onClick={onOpenNotifications}>
                 <Badge badgeContent={unreadCount} color="secondary">
                   <Notifications />
                 </Badge>

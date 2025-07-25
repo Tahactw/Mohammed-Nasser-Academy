@@ -44,6 +44,8 @@ import { messagesApi } from '@/services/api/messages'
 import { notificationsApi } from '@/services/api/notifications'
 import { useAuth } from '@/context/AuthContext'
 import { useNotification } from '@/context/NotificationContext'
+import { booksApi } from '@/services/api/books'
+import { coursesApi } from '@/services/api/courses'
 
 interface TabPanelProps {
   children?: React.ReactNode
