@@ -39,13 +39,14 @@ import {
   MenuBook,
   EmojiEvents,
   Settings,
-  Notifications,
   Upload
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { User, BookOwnership, CourseEnrollment, UserBadge, Certificate, Message as MessageType } from '@/types'
 import { usersApi } from '@/services/api/users'
+import { booksApi } from '@/services/api/books'
+import { coursesApi } from '@/services/api/courses'
 import { messagesApi } from '@/services/api/messages'
 import { notificationsApi } from '@/services/api/notifications'
 import { useAuth } from '@/context/AuthContext'
@@ -124,8 +125,8 @@ const ProfilePage: React.FC = () => {
         badgesData,
         certificatesData
       ] = await Promise.all([
-        usersApi.getUserBooks(profileId!),
-        usersApi.getUserEnrollments(profileId!),
+        booksApi.getUserBooks(profileId!),
+        coursesApi.getUserEnrollments(profileId!),
         usersApi.getUserBadges(profileId!),
         usersApi.getUserCertificates(profileId!)
       ])

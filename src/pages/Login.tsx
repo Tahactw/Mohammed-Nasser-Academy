@@ -14,6 +14,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context/AuthContext'
 import { useNotification } from '@/context/NotificationContext'
+import { supabase } from '@/services/supabase'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()

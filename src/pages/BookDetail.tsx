@@ -167,7 +167,7 @@ const BookDetailPage: React.FC = () => {
             <Chip
               label={`$${book.price}`}
               color="primary"
-              size="large"
+              size="medium"
               sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}
             />
           </Box>
