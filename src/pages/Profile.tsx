@@ -21,7 +21,12 @@ import {
   TextField,
   CircularProgress,
   Divider,
-  Badge as MuiBadge
+  Badge as MuiBadge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
 } from '@mui/material'
 import {
   Edit,
@@ -34,7 +39,8 @@ import {
   MenuBook,
   EmojiEvents,
   Settings,
-  Notifications
+  Notifications,
+  Upload
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
@@ -44,8 +50,7 @@ import { messagesApi } from '@/services/api/messages'
 import { notificationsApi } from '@/services/api/notifications'
 import { useAuth } from '@/context/AuthContext'
 import { useNotification } from '@/context/NotificationContext'
-import { booksApi } from '@/services/api/books'
-import { coursesApi } from '@/services/api/courses'
+import { supabase, getPublicUrl, uploadFile } from '@/services/supabase'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -67,7 +72,7 @@ const ProfilePage: React.FC = () => {
   const { t } = useTranslation()
   const { profile: currentUser, updateProfile } = useAuth()
   const { showNotification } = useNotification()
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [tabValue, setTabValue] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -82,13 +87,22 @@ const ProfilePage: React.FC = () => {
   const [giftHistory, setGiftHistory] = useState<BookOwnership[]>([])
   const [isBlocked, setIsBlocked] = useState(false)
 
+  // New: Edit profile dialog state
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [editUsername, setEditUsername] = useState('')
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
   const isOwnProfile = !userId || userId === currentUser?.id
   const profileId = userId || currentUser?.id
 
   useEffect(() => {
     if (profileId) {
       fetchProfile()
-      
+
       // Track profile visit
       if (!isOwnProfile && currentUser) {
         notificationsApi.notifyProfileVisit(profileId, currentUser.id, currentUser.username)
@@ -110,8 +124,8 @@ const ProfilePage: React.FC = () => {
         badgesData,
         certificatesData
       ] = await Promise.all([
-        booksApi.getUserBooks(profileId!),
-        coursesApi.getUserEnrollments(profileId!),
+        usersApi.getUserBooks(profileId!),
+        usersApi.getUserEnrollments(profileId!),
         usersApi.getUserBadges(profileId!),
         usersApi.getUserCertificates(profileId!)
       ])
@@ -125,7 +139,7 @@ const ProfilePage: React.FC = () => {
       if (isOwnProfile) {
         const messagesData = await messagesApi.getUserMessages(profileId!)
         setMessages(messagesData)
-        
+
         // Filter gift history
         const giftsReceived = booksData.filter(b => b.is_gift)
         setGiftHistory(giftsReceived)
@@ -149,6 +163,7 @@ const ProfilePage: React.FC = () => {
       await updateProfile({ bio })
       setEditingBio(false)
       showNotification('Bio updated', 'success')
+      fetchProfile()
     } catch (error) {
       showNotification('Failed to update bio', 'error')
     }
@@ -159,6 +174,7 @@ const ProfilePage: React.FC = () => {
       await updateProfile({ course_progress_public: !courseProgressPublic })
       setCourseProgressPublic(!courseProgressPublic)
       showNotification('Privacy settings updated', 'success')
+      fetchProfile()
     } catch (error) {
       showNotification('Failed to update privacy settings', 'error')
     }
@@ -166,7 +182,7 @@ const ProfilePage: React.FC = () => {
 
   const handleBlockUser = async () => {
     if (!currentUser || !user) return
-    
+
     try {
       if (isBlocked) {
         await usersApi.unblockUser(currentUser.id, user.id)
@@ -195,6 +211,95 @@ const ProfilePage: React.FC = () => {
     }
   }
 
+  // Edit Profile dialog handlers
+  const handleEditProfileOpen = () => {
+    setEditProfileOpen(true)
+    setEditUsername(user?.username || '')
+    setUsernameError(null)
+    setEditAvatarFile(null)
+    setAvatarPreview(user?.avatar_url || null)
+    setEditError(null)
+  }
+
+  const handleEditProfileClose = () => {
+    setEditProfileOpen(false)
+    setEditLoading(false)
+    setEditError(null)
+    setEditAvatarFile(null)
+    setAvatarPreview(user?.avatar_url || null)
+    setUsernameError(null)
+  }
+
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsername = e.target.value
+    setEditUsername(newUsername)
+    setUsernameError(null)
+    if (newUsername.length >= 3 && /^[a-zA-Z0-9_]+$/.test(newUsername)) {
+      if (newUsername !== user?.username) {
+        const available = await usersApi.checkUsername(newUsername, user?.id)
+        if (!available) {
+          setUsernameError('Username already taken')
+        }
+      }
+    } else if (newUsername.length > 0) {
+      setUsernameError('Username must be at least 3 characters and contain only letters, numbers, and underscores')
+    }
+  }
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setEditAvatarFile(file)
+    setEditError(null)
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleEditProfileSave = async () => {
+    setEditLoading(true)
+    setEditError(null)
+    let avatarUrl = user?.avatar_url || ''
+    try {
+      // Validate username again before submit
+      if (!editUsername || editUsername.length < 3 || !/^[a-zA-Z0-9_]+$/.test(editUsername)) {
+        setUsernameError('Username must be at least 3 characters and contain only letters, numbers, and underscores')
+        setEditLoading(false)
+        return
+      }
+      if (editUsername !== user?.username) {
+        const available = await usersApi.checkUsername(editUsername, user?.id)
+        if (!available) {
+          setUsernameError('Username already taken')
+          setEditLoading(false)
+          return
+        }
+      }
+
+      // If avatar file is selected, upload it to Supabase Storage
+      if (editAvatarFile) {
+        const path = `avatars/${user?.id}-${Date.now()}-${editAvatarFile.name}`
+        await uploadFile('avatars', path, editAvatarFile)
+        avatarUrl = getPublicUrl('avatars', path)
+      }
+
+      await updateProfile({
+        username: editUsername,
+        avatar_url: avatarUrl
+      })
+      showNotification('Profile updated successfully', 'success')
+      setEditProfileOpen(false)
+      fetchProfile()
+    } catch (error: any) {
+      setEditError(error.message || 'Failed to update profile')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -213,19 +318,47 @@ const ProfilePage: React.FC = () => {
       <Paper sx={{ p: 4, mb: 3 }}>
         <Grid container spacing={3} alignItems="center">
           <Grid item>
-            <Avatar
-              src={user.avatar_url}
-              sx={{ width: 120, height: 120 }}
-            >
-              {user.username[0].toUpperCase()}
-            </Avatar>
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              <Avatar
+                src={user.avatar_url}
+                sx={{ width: 120, height: 120 }}
+              >
+                {user.username[0].toUpperCase()}
+              </Avatar>
+              {isOwnProfile && (
+                <IconButton
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    bottom: 8,
+                    right: 8,
+                    bgcolor: 'background.paper',
+                    boxShadow: 1,
+                  }}
+                  onClick={handleEditProfileOpen}
+                >
+                  <Edit />
+                </IconButton>
+              )}
+            </Box>
           </Grid>
           <Grid item xs>
-            <Typography variant="h4">{user.username}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h4">{user.username}</Typography>
+              {isOwnProfile && (
+                <IconButton
+                  size="small"
+                  sx={{ ml: 1 }}
+                  onClick={handleEditProfileOpen}
+                >
+                  <Edit />
+                </IconButton>
+              )}
+            </Box>
             {user.is_admin && (
               <Chip label="Admin" color="primary" size="small" sx={{ mt: 1 }} />
             )}
-            
+
             {/* Badges */}
             <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
               {badges.map((userBadge) => (
@@ -316,6 +449,65 @@ const ProfilePage: React.FC = () => {
           )}
         </Grid>
       </Paper>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={editProfileOpen} onClose={handleEditProfileClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Profile</DialogTitle>
+        <DialogContent>
+          {editError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {editError}
+            </Alert>
+          )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+            <Avatar
+              src={avatarPreview || undefined}
+              sx={{ width: 100, height: 100, mb: 2 }}
+            >
+              {editUsername[0]?.toUpperCase() || user.username[0].toUpperCase()}
+            </Avatar>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<Upload />}
+              sx={{ mb: 1 }}
+            >
+              Change Picture
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleAvatarFileChange}
+              />
+            </Button>
+            {editAvatarFile && (
+              <Typography variant="caption" display="block" sx={{ mb: 1 }}>
+                {editAvatarFile.name}
+              </Typography>
+            )}
+          </Box>
+          <TextField
+            fullWidth
+            label="Username"
+            value={editUsername}
+            onChange={handleUsernameChange}
+            error={!!usernameError}
+            helperText={usernameError || 'Username must be at least 3 characters and contain only letters, numbers, and underscores'}
+            margin="normal"
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleEditProfileClose}>Cancel</Button>
+          <Button
+            onClick={handleEditProfileSave}
+            variant="contained"
+            disabled={editLoading || !!usernameError || !editUsername}
+          >
+            {editLoading ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
@@ -490,7 +682,7 @@ const ProfilePage: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Settings
             </Typography>
-            
+
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Privacy
