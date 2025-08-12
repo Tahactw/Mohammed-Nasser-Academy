@@ -13,7 +13,7 @@ export const coursesApi = {
     return data as Course[]
   },
 
-  // Get single course
+  // Get course by ID
   async getById(id: string) {
     const { data, error } = await supabase
       .from('courses')
@@ -25,7 +25,57 @@ export const coursesApi = {
     return data as Course
   },
 
-  // Get user's enrollments
+  // Create course
+  async create(course: Omit<Course, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from('courses')
+      .insert(course)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Course
+  },
+
+  // Update course
+  async update(id: string, updates: Partial<Course>) {
+    const { data, error } = await supabase
+      .from('courses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Course
+  },
+
+  // Delete course
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  // Get course enrollments
+  async getCourseEnrollments(courseId: string) {
+    const { data, error } = await supabase
+      .from('course_enrollments')
+      .select(`
+        *,
+        user:users(id, username, avatar_url, email)
+      `)
+      .eq('course_id', courseId)
+      .order('enrolled_at', { ascending: false })
+
+    if (error) throw error
+    return data as CourseEnrollment[]
+  },
+
+  // Get user enrollments
   async getUserEnrollments(userId: string) {
     const { data, error } = await supabase
       .from('course_enrollments')
@@ -40,77 +90,27 @@ export const coursesApi = {
     return data as CourseEnrollment[]
   },
 
-  // Get course enrollments
-  async getCourseEnrollments(courseId: string) {
-    const { data, error } = await supabase
-      .from('course_enrollments')
-      .select(`
-        *,
-        user:users(id, username, avatar_url)
-      `)
-      .eq('course_id', courseId)
-      .order('enrolled_at', { ascending: false })
-
-    if (error) throw error
-    return data as CourseEnrollment[]
-  },
-
   // Check enrollment
   async checkEnrollment(courseId: string, userId: string) {
     const { data, error } = await supabase
       .from('course_enrollments')
-      .select('*')
+      .select('id')
       .eq('course_id', courseId)
       .eq('user_id', userId)
       .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data as CourseEnrollment | null
+    return !!data
   },
 
-  // Create course (admin)
-  async create(course: Omit<Course, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
-      .from('courses')
-      .insert(course)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Course
-  },
-
-  // Update course (admin)
-  async update(id: string, updates: Partial<Course>) {
-    const { data, error } = await supabase
-      .from('courses')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Course
-  },
-
-  // Delete course (admin)
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('courses')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
-  },
-
-  // Enroll user (admin)
+  // Enroll user
   async enrollUser(courseId: string, userId: string) {
     const { data, error } = await supabase
       .from('course_enrollments')
       .insert({
         course_id: courseId,
         user_id: userId,
-        status: 'not_started',
+        status: 'enrolled',
         progress: 0,
         enrolled_at: new Date().toISOString()
       })
@@ -121,12 +121,12 @@ export const coursesApi = {
     return data as CourseEnrollment
   },
 
-  // Update enrollment (admin)
-  async updateEnrollment(id: string, updates: Partial<CourseEnrollment>) {
+  // Update enrollment
+  async updateEnrollment(enrollmentId: string, updates: Partial<CourseEnrollment>) {
     const { data, error } = await supabase
       .from('course_enrollments')
       .update(updates)
-      .eq('id', id)
+      .eq('id', enrollmentId)
       .select()
       .single()
 
@@ -134,7 +134,7 @@ export const coursesApi = {
     return data as CourseEnrollment
   },
 
-  // Remove enrollment (admin)
+  // Remove enrollment
   async removeEnrollment(courseId: string, userId: string) {
     const { error } = await supabase
       .from('course_enrollments')
@@ -143,5 +143,25 @@ export const coursesApi = {
       .eq('user_id', userId)
 
     if (error) throw error
+  },
+
+  // Update progress
+  async updateProgress(enrollmentId: string, progress: number) {
+    const updates: any = { progress }
+    
+    if (progress >= 100) {
+      updates.status = 'completed'
+      updates.completed_at = new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from('course_enrollments')
+      .update(updates)
+      .eq('id', enrollmentId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as CourseEnrollment
   }
 }

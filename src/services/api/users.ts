@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { User, Badge, UserBadge, Certificate, BlockedUser } from '@/types'
+import { User, UserBadge, Certificate, BlockedUser } from '@/types'
 
 export const usersApi = {
   // Get user profile

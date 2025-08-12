@@ -13,7 +13,7 @@ export const booksApi = {
     return data as Book[]
   },
 
-  // Get single book
+  // Get book by ID
   async getById(id: string) {
     const { data, error } = await supabase
       .from('books')
@@ -25,16 +25,39 @@ export const booksApi = {
     return data as Book
   },
 
-  // Search books
-  async search(query: string) {
+  // Create book
+  async create(book: Omit<Book, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await supabase
       .from('books')
-      .select('*')
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-      .order('created_at', { ascending: false })
+      .insert(book)
+      .select()
+      .single()
 
     if (error) throw error
-    return data as Book[]
+    return data as Book
+  },
+
+  // Update book
+  async update(id: string, updates: Partial<Book>) {
+    const { data, error } = await supabase
+      .from('books')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as Book
+  },
+
+  // Delete book
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('books')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
   },
 
   // Get book owners
@@ -52,7 +75,7 @@ export const booksApi = {
     return data as BookOwnership[]
   },
 
-  // Check if user owns book
+  // Check book ownership
   async checkOwnership(bookId: string, userId: string) {
     const { data, error } = await supabase
       .from('book_ownership')
@@ -65,72 +88,14 @@ export const booksApi = {
     return !!data
   },
 
-  // Get user's books
-  async getUserBooks(userId: string) {
-    const { data, error } = await supabase
-      .from('book_ownership')
-      .select(`
-        *,
-        book:books(*)
-      `)
-      .eq('user_id', userId)
-      .order('purchase_date', { ascending: false })
-
-    if (error) throw error
-    return data as BookOwnership[]
-  },
-
-  // Create book (admin)
-  async create(book: Omit<Book, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
-      .from('books')
-      .insert(book)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Book
-  },
-
-  // Update book (admin)
-  async update(id: string, updates: Partial<Book>) {
-    const { data, error } = await supabase
-      .from('books')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Book
-  },
-
-  // Delete book (admin)
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('books')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
-  },
-
-  // Gift book
-  async gift(bookId: string, recipientId: string, message: string, gifterId: string) {
-    // Check if recipient already owns the book
-    const ownership = await this.checkOwnership(bookId, recipientId)
-    if (ownership) {
-      throw new Error('Recipient already owns this book')
-    }
-
+  // Purchase book
+  async purchase(bookId: string, userId: string, transactionId: string) {
     const { data, error } = await supabase
       .from('book_ownership')
       .insert({
         book_id: bookId,
-        user_id: recipientId,
-        is_gift: true,
-        gifted_by: gifterId,
-        gift_message: message,
+        user_id: userId,
+        transaction_id: transactionId,
         purchase_date: new Date().toISOString()
       })
       .select()
@@ -138,5 +103,40 @@ export const booksApi = {
 
     if (error) throw error
     return data as BookOwnership
+  },
+
+  // Gift book
+  async gift(bookId: string, gifterId: string, recipientId: string, message?: string) {
+    const { data, error } = await supabase
+      .from('book_ownership')
+      .insert({
+        book_id: bookId,
+        user_id: recipientId,
+        gifter_id: gifterId,
+        gift_message: message,
+        is_gift: true,
+        purchase_date: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as BookOwnership
+  },
+
+  // Get user's books
+  async getUserBooks(userId: string) {
+    const { data, error } = await supabase
+      .from('book_ownership')
+      .select(`
+        *,
+        book:books(*),
+        gifter:users!book_ownership_gifter_id_fkey(id, username, avatar_url)
+      `)
+      .eq('user_id', userId)
+      .order('purchase_date', { ascending: false })
+
+    if (error) throw error
+    return data as BookOwnership[]
   }
 }

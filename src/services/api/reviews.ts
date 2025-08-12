@@ -26,7 +26,7 @@ export const reviewsApi = {
     return filteredData.map(review => ({
       ...review,
       likes_count: review.likes?.length || 0,
-      user_has_liked: userId ? review.likes?.some(like => like.user_id === userId) : false
+      user_has_liked: userId ? review.likes?.some((like: any) => like.user_id === userId) : false
     })) as Review[]
   },
 
