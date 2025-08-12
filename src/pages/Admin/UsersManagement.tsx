@@ -15,7 +15,8 @@ import {
   TextField,
   InputAdornment,
   Menu,
-  MenuItem
+  MenuItem,
+  CircularProgress
 } from '@mui/material'
 import {
   Search,
@@ -169,6 +170,14 @@ const UsersManagement: React.FC = () => {
       window.open(`/profile/${selectedUser.id}`, '_blank')
     }
     handleMenuClose()
+  }
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (

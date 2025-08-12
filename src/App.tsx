@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { CssBaseline, CircularProgress, Box } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers'

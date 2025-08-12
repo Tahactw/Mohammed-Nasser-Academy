@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { Review, ReviewReply } from '@/types'
+import { Review } from '@/types'
 import { reviewsApi } from '@/services/api/reviews'
 import { notificationsApi } from '@/services/api/notifications'
 import { useAuth } from '@/context/AuthContext'

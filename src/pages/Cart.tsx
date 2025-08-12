@@ -77,7 +77,7 @@ const CartPage: React.FC = () => {
       })
 
       // Create transaction record
-      const { data: transaction, error: transactionError } = await supabase
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
           user_id: profile.id,

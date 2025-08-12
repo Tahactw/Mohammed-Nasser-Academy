@@ -16,7 +16,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  InputAdornment
+  InputAdornment,
+  CircularProgress
 } from '@mui/material'
 import { Edit, Delete, Add, Upload } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -92,7 +93,7 @@ const BooksManagement: React.FC = () => {
 
   const handleUploadFile = async (file: File, bucket: string, path: string) => {
     try {
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from(bucket)
         .upload(path, file, { upsert: true })
       
@@ -179,6 +180,14 @@ const BooksManagement: React.FC = () => {
     } catch (error) {
       showNotification('Failed to delete book', 'error')
     }
+  }
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (

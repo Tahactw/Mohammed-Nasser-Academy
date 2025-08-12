@@ -16,7 +16,8 @@ import {
   DialogContent,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  CircularProgress
 } from '@mui/material'
 import { Visibility } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
@@ -71,6 +72,14 @@ const TransactionsView: React.FC = () => {
     }
   }
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    )
+  }
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -98,7 +107,7 @@ const TransactionsView: React.FC = () => {
                 <TableCell>
                   <Chip
                     label={transaction.status}
-                    color={getStatusColor(transaction.status)}
+                    color={getStatusColor(transaction.status) as any}
                     size="small"
                   />
                 </TableCell>
@@ -138,7 +147,7 @@ const TransactionsView: React.FC = () => {
               <Typography variant="subtitle2" gutterBottom>
                 Status: <Chip
                   label={selectedTransaction.status}
-                  color={getStatusColor(selectedTransaction.status)}
+                  color={getStatusColor(selectedTransaction.status) as any}
                   size="small"
                 />
               </Typography>

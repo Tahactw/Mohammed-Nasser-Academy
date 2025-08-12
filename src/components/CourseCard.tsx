@@ -36,7 +36,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, enrollment: initialEnro
     const checkEnrollment = async () => {
       if (profile && !initialEnrollment) {
         const enrolled = await coursesApi.checkEnrollment(course.id, profile.id)
-        setEnrollment(enrolled)
+        setEnrollment(enrolled || null)
       }
     }
     checkEnrollment()
@@ -111,7 +111,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, enrollment: initialEnro
             <>
               <Chip
                 label={getStatusText()}
-                color={getStatusColor()}
+                color={getStatusColor() as any}
                 size="small"
                 sx={{ mb: 1 }}
               />

@@ -1,9 +1,7 @@
 import React from 'react'
 import { Box, Container, Typography, Link, Grid } from '@mui/material'
-import { useTranslation } from 'react-i18next'
 
 const Footer: React.FC = () => {
-  const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
 
   return (

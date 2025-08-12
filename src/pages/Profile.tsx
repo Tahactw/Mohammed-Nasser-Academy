@@ -41,7 +41,6 @@ import {
   Settings,
   Upload
 } from '@mui/icons-material'
-import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { User, BookOwnership, CourseEnrollment, UserBadge, Certificate, Message as MessageType } from '@/types'
 import { usersApi } from '@/services/api/users'
@@ -51,7 +50,7 @@ import { messagesApi } from '@/services/api/messages'
 import { notificationsApi } from '@/services/api/notifications'
 import { useAuth } from '@/context/AuthContext'
 import { useNotification } from '@/context/NotificationContext'
-import { supabase, getPublicUrl, uploadFile } from '@/services/supabase'
+import { getPublicUrl, uploadFile } from '@/services/supabase'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -70,7 +69,6 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 const ProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId?: string }>()
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const { profile: currentUser, updateProfile } = useAuth()
   const { showNotification } = useNotification()
 
@@ -83,7 +81,6 @@ const ProfilePage: React.FC = () => {
   const [books, setBooks] = useState<BookOwnership[]>([])
   const [courses, setCourses] = useState<CourseEnrollment[]>([])
   const [badges, setBadges] = useState<UserBadge[]>([])
-  const [certificates, setCertificates] = useState<Certificate[]>([])
   const [messages, setMessages] = useState<MessageType[]>([])
   const [giftHistory, setGiftHistory] = useState<BookOwnership[]>([])
   const [isBlocked, setIsBlocked] = useState(false)
@@ -134,7 +131,6 @@ const ProfilePage: React.FC = () => {
       setBooks(booksData)
       setCourses(coursesData)
       setBadges(badgesData)
-      setCertificates(certificatesData)
 
       // Fetch additional data for own profile
       if (isOwnProfile) {

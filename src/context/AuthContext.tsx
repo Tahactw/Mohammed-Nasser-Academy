@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { User as SupabaseUser } from '@supabase/supabase-js'
-import { supabase, getCurrentUser } from '@/services/supabase'
+import { supabase } from '@/services/supabase'
 import { usersApi } from '@/services/api/users'
 import { User } from '@/types'
 
