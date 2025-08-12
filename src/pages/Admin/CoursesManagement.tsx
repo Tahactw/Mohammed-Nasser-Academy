@@ -38,7 +38,6 @@ const CoursesManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([])
-  const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [enrollmentDialogOpen, setEnrollmentDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
@@ -67,8 +66,6 @@ const CoursesManagement: React.FC = () => {
       setUsers(usersData.filter(u => !u.is_banned))
     } catch (error) {
       console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -120,7 +117,7 @@ const CoursesManagement: React.FC = () => {
 
       if (imageFile) {
         const path = `courses/${Date.now()}-${imageFile.name}`
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('course-images')
           .upload(path, imageFile, { upsert: true })
         
@@ -476,7 +473,7 @@ const CoursesManagement: React.FC = () => {
                         onClick={() => handleUpdateEnrollment(enrollment, {
                           status: enrollment.status === 'completed' ? 'in_progress' : 'completed',
                           progress: enrollment.status === 'completed' ? 50 : 100,
-                          completed_at: enrollment.status === 'completed' ? undefined : new Date().toISOString() // FIXED!
+                          completed_at: enrollment.status === 'completed' ? undefined : new Date().toISOString()
                         })}
                       >
                         Toggle Complete
