@@ -142,7 +142,7 @@ const ProfilePage: React.FC = () => {
         setMessages(messagesData)
 
         // Filter gift history
-        const giftsReceived = booksData.filter(b => b.is_gift)
+        const giftsReceived = booksData.filter((b: BookOwnership) => b.is_gift)
         setGiftHistory(giftsReceived)
       }
 

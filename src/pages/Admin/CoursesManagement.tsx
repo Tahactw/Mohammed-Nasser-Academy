@@ -476,7 +476,7 @@ const CoursesManagement: React.FC = () => {
                         onClick={() => handleUpdateEnrollment(enrollment, {
                           status: enrollment.status === 'completed' ? 'in_progress' : 'completed',
                           progress: enrollment.status === 'completed' ? 50 : 100,
-                          completed_at: enrollment.status === 'completed' ? null : new Date().toISOString()
+                          completed_at: enrollment.status === 'completed' ? undefined : new Date().toISOString() // FIXED!
                         })}
                       >
                         Toggle Complete

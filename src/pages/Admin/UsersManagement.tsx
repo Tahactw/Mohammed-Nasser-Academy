@@ -15,17 +15,14 @@ import {
   TextField,
   InputAdornment,
   Menu,
-  MenuItem,
-  Switch,
-  FormControlLabel
+  MenuItem
 } from '@mui/material'
 import {
   Search,
   MoreVert,
   Block,
   Delete,
-  AdminPanelSettings,
-  Badge as BadgeIcon
+  AdminPanelSettings
 } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { User } from '@/types'
